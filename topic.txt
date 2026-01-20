@@ -1,0 +1,17 @@
+docker exec -it w12-kafka-0-1 kafka-topics.sh \
+  --bootstrap-server localhost:9092 \
+  --create \
+  --if-not-exists \
+  --topic test-topic \
+  --partitions 3 \
+  --replication-factor 2
+
+docker exec -it w12-kafka-0-1 kafka-topics.sh \
+  --bootstrap-server localhost:9092 \
+  --describe \
+  --topic test-topic
+
+Topic: test-topic       TopicId: npOPycAyQh6FhzRt964wdA PartitionCount: 3       ReplicationFactor: 2    Configs:
+        Topic: test-topic       Partition: 0    Leader: 2       Replicas: 2,0   Isr: 2,0
+        Topic: test-topic       Partition: 1    Leader: 0       Replicas: 0,1   Isr: 0,1
+        Topic: test-topic       Partition: 2    Leader: 1       Replicas: 1,2   Isr: 1,2

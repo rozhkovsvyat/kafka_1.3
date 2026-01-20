@@ -1,0 +1,201 @@
+services:
+  kafka-0:
+    image: bitnamilegacy/kafka:3.4
+    ports:
+      - "9094:9094"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_KRAFT_CLUSTER_ID=4L69s91yQ8uThB2yS775_w
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-0:9092,EXTERNAL://localhost:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - kafka_0_data:/bitnami/kafka
+
+  kafka-1:
+    image: bitnamilegacy/kafka:3.4
+    ports:
+      - "9095:9095"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_KRAFT_CLUSTER_ID=4L69s91yQ8uThB2yS775_w
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9095
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-1:9092,EXTERNAL://localhost:9095
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - kafka_1_data:/bitnami/kafka
+
+  kafka-2:
+    image: bitnamilegacy/kafka:3.4
+    ports:
+      - "9096:9096"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_KRAFT_CLUSTER_ID=4L69s91yQ8uThB2yS775_w
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9096
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-2:9092,EXTERNAL://localhost:9096
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - kafka_2_data:/bitnami/kafka
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    depends_on:
+      kafka-0:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      schema-registry:
+        condition:  service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=kraft-cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka-0:9092,kafka-1:9092,kafka-2:9092
+      - KAFKA_CLUSTERS_0_SCHEMAREGISTRY=http://schema-registry:8081
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    depends_on:
+      kafka-0:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      - SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://kafka-0:9092,PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092
+      - SCHEMA_REGISTRY_HOST_NAME=schema-registry
+      - SCHEMA_REGISTRY_LISTENERS=http://0.0.0.0:8081
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  kafka-init:
+    image: bitnamilegacy/kafka:3.4
+    depends_on:
+      kafka-0:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+    entrypoint: [ "/bin/bash", "-c" ]
+    command: |
+      "kafka-topics.sh --create --if-not-exists --bootstrap-server kafka-0:9092 --replication-factor 2 --partitions 3 --topic test-topic && sleep 5"
+
+  producer:
+    build: .
+    deploy:
+      replicas: 2
+    environment:
+      - MAIN_CLASS=com.work.producers.AvroProducer
+      - BOOTSTRAP_SERVERS=kafka-0:9092,kafka-1:9092,kafka-2:9092
+      - SCHEMA_REGISTRY=http://schema-registry:8081
+      - TOPIC=test-topic
+    depends_on:
+      kafka-0:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      schema-registry:
+        condition:  service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+  batch-consumer:
+    build: .
+    deploy:
+      replicas: 2
+    environment:
+      - MAIN_CLASS=com.work.consumers.AvroBatchConsumer
+      - BOOTSTRAP_SERVERS=kafka-0:9092,kafka-1:9092,kafka-2:9092
+      - SCHEMA_REGISTRY=http://schema-registry:8081
+      - GROUP_ID=batch-group
+      - TOPIC=test-topic
+    depends_on:
+      kafka-0:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+  single-consumer:
+    build: .
+    deploy:
+      replicas: 2
+    environment:
+      - MAIN_CLASS=com.work.consumers.AvroSingleConsumer
+      - BOOTSTRAP_SERVERS=kafka-0:9092,kafka-1:9092,kafka-2:9092
+      - SCHEMA_REGISTRY=http://schema-registry:8081
+      - GROUP_ID=single-group
+      - TOPIC=test-topic
+    depends_on:
+      kafka-0:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+volumes:
+  kafka_0_data:
+  kafka_1_data:
+  kafka_2_data:
