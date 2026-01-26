@@ -139,6 +139,8 @@ services:
       - BOOTSTRAP_SERVERS=kafka-0:9092,kafka-1:9092,kafka-2:9092
       - SCHEMA_REGISTRY=http://schema-registry:8081
       - TOPIC=test-topic
+      - SENDING_PERIOD_MS=500
+      - RETRY_BACKOFF_MS=100
     depends_on:
       kafka-0:
         condition: service_healthy
@@ -161,6 +163,11 @@ services:
       - SCHEMA_REGISTRY=http://schema-registry:8081
       - GROUP_ID=batch-group
       - TOPIC=test-topic
+      - SENDING_PERIOD_MS=500
+      - REQUEST_TIMEOUT_FETCH_MAX_WAIT_DELTA_MS = 2000
+      - FETCH_MIN_BYTES=5000
+      - BATCH_SIZE=10
+      - GRACEFUL_SHUTDOWN_WAIT_MS=5000
     depends_on:
       kafka-0:
         condition: service_healthy
@@ -183,6 +190,11 @@ services:
       - SCHEMA_REGISTRY=http://schema-registry:8081
       - GROUP_ID=single-group
       - TOPIC=test-topic
+      - SENDING_PERIOD_MS=500
+      - REQUEST_TIMEOUT_FETCH_MAX_WAIT_DELTA_MS = 2000
+      - FETCH_MIN_BYTES=1
+      - FETCH_MAX_WAIT_MS=100
+      - GRACEFUL_SHUTDOWN_WAIT_MS=5000
     depends_on:
       kafka-0:
         condition: service_healthy
