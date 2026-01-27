@@ -54,7 +54,6 @@ public class AvroSingleConsumer extends AvroConsumer {
                         logger.info("Received [Bytes: {}] [BrokerId: {}] [ID: {}] [Number: {}] [Topic: {}] [Partition: {}] [Offset: {}].", 
                             consumerRecord.serializedValueSize(), brokerId, messageDto.getId(), messageDto.getNumber(), consumerRecord.topic(), consumerRecord.partition(), consumerRecord.offset());
 
-                        // Некоторая бизнес-логика обработки сообщения.
                         processMessage(messageDto);
 
                     } catch (ClassCastException | SerializationException exception) {
@@ -75,9 +74,5 @@ public class AvroSingleConsumer extends AvroConsumer {
             kafkaConsumer.close();
             logger.info("Consumer closed.");
         }
-    }
-
-    private static void processMessage(MessageDto messageDto) {
-        logger.info("Processing message with ID: {}", messageDto.getId());
     }
 }
